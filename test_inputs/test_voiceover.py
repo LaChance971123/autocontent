@@ -4,7 +4,7 @@ from pathlib import Path
 # Add parent dir to sys.path to import voiceover
 sys.path.append(str(Path(__file__).resolve().parent.parent / "modules"))
 
-from voiceover import generate_voiceover
+from modules.voiceover import generate_voiceover
 
 # Dummy script text
 script_text = """I found a tape recorder in my dead brother’s room.

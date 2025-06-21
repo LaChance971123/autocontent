@@ -1,6 +1,30 @@
-import re
+"""Utility helpers for subtitle formatting and environment flags."""
 
-def save_ass_subtitles(segments, path):
+from __future__ import annotations
+
+import os
+import re
+from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def get_test_mode() -> bool:
+    """Return True if TEST_MODE env var is truthy."""
+    value = os.getenv("TEST_MODE", "true")
+    return value.lower() in {"1", "true", "yes"}
+
+from typing import Iterable, Mapping
+
+
+def save_ass_subtitles(segments: Iterable[Mapping], path: Path) -> None:
+    """Write an ASS subtitle file for *segments* to *path*.
+
+    Each ``segment`` mapping must contain ``start`` (seconds), ``end`` (seconds)
+    and ``word`` (str) keys.
+    """
+
     header = """[Script Info]
 ScriptType: v4.00+
 Collisions: Normal
@@ -36,3 +60,4 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     with open(path, "w", encoding="utf-8") as f:
         f.write(header + body)
+

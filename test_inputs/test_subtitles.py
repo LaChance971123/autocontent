@@ -4,7 +4,7 @@ from pathlib import Path
 # Add modules to sys path
 sys.path.append(str(Path(__file__).resolve().parent.parent / "modules"))
 
-from subtitles import generate_subtitles
+from modules.generate_subtitles import generate_subtitles
 
 # Define input/output
 audio_path = Path(__file__).resolve().parent.parent / "temp" / "voice.wav"

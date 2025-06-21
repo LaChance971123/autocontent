@@ -2,10 +2,10 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath('.'))
 
-from modules.generate_voiceover_elevenlabs import generate_voiceover
+from modules.voiceover import generate_voiceover
 from modules.generate_subtitles import generate_subtitles
 from modules.generate_card import generate_card
-from modules.render_final_video import render_final_video as generate_final_video
+from modules.render_video import render_final_video as generate_final_video
 
 def main():
     script_path = "scripts/test_script.txt"
