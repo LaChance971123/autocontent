@@ -1,0 +1,3 @@
+AutoContent Project Log
+
+Initialized directory structure.
