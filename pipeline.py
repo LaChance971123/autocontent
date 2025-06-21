@@ -19,6 +19,7 @@ from modules.utils import (
     save_job_log,
     ErrorCode,
     is_api_mode,
+    OUTPUT_DIR,
 )
 
 logger = get_logger(__name__)
@@ -28,7 +29,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Run the AutoContent pipeline")
     parser.add_argument("--script", required=True, help="Path to script text file")
     parser.add_argument("--background", required=True, help="Background video file")
-    parser.add_argument("--output-dir", help="Directory for final outputs")
+    parser.add_argument("--output", dest="output_dir", help="Directory for final outputs")
     parser.add_argument("--dry-run", action="store_true", help="Run pipeline without rendering final video")
     parser.add_argument("--test-mode", action="store_true", help="Use dummy audio and subtitles")
     parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
@@ -50,19 +51,6 @@ def validate_paths(script_path: Path, background_path: Path):
         raise FileNotFoundError(ErrorCode.BACKGROUND_NOT_FOUND.value)
 
 
-def export_thumbnail(video: Path, thumb: Path, title: str):
-    try:
-        subprocess.run([
-            "ffmpeg", "-y", "-i", str(video), "-ss", "00:00:01",
-            "-vframes", "1",
-            "-vf", f"drawtext=text='{title}':fontcolor=white:fontsize=32:box=1:boxcolor=black@0.5:boxborderw=5:x=(w-text_w)/2:y=(h-text_h)/2",
-            str(thumb)
-        ], check=True)
-        logger.info(f"Thumbnail exported to {thumb}")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"{ErrorCode.THUMBNAIL_FAIL.value}: {e}")
-        raise RuntimeError(ErrorCode.THUMBNAIL_FAIL.value) from e
-
 
 def compress_video(src: Path, dest: Path):
     try:
@@ -83,7 +71,7 @@ def compress_video(src: Path, dest: Path):
         raise RuntimeError(ErrorCode.COMPRESS_FAIL.value) from e
 
 
-def cleanup_old_jobs(count: int, base: Path = Path("output")):
+def cleanup_old_jobs(count: int, base: Path = OUTPUT_DIR):
     if count <= 0 or not base.exists():
         return
     dirs = [d for d in base.iterdir() if d.is_dir()]
@@ -126,7 +114,7 @@ def run_pipeline(args, job_id: str | None = None, started_at: str | None = None)
     if args.output_dir:
         output_dir = Path(args.output_dir)
     else:
-        output_dir = Path("output") / sanitize_name(title)
+        output_dir = OUTPUT_DIR / sanitize_name(title)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     temp_dir = Path("temp")
@@ -161,21 +149,20 @@ def run_pipeline(args, job_id: str | None = None, started_at: str | None = None)
 
     if not args.dry_run:
         try:
-            render_final_video(background_path, voice_path, subs_path, video_path)
+            render_final_video(
+                background_path,
+                voice_path,
+                subs_path,
+                video_path,
+                thumbnail=args.thumbnail,
+            )
             job_log["output_files"]["video"] = str(video_path)
+            if args.thumbnail:
+                job_log["output_files"]["thumbnail"] = str(video_path.with_suffix(".png"))
         except Exception as e:
             job_log["errors"].append(e.args[0] if e.args else str(e))
             if args.strict:
                 raise
-        if args.thumbnail and not job_log["errors"]:
-            try:
-                thumb = output_dir / "thumbnail.png"
-                export_thumbnail(video_path, thumb, title)
-                job_log["output_files"]["thumbnail"] = str(thumb)
-            except Exception as e:
-                job_log["errors"].append(e.args[0] if e.args else str(e))
-                if args.strict:
-                    raise
         if args.compress and not job_log["errors"]:
             try:
                 compressed = output_dir / "final_compressed.mp4"

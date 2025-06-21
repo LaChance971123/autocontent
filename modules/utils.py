@@ -7,6 +7,12 @@ from pathlib import Path
 from datetime import datetime
 from enum import Enum
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+JOBS_DIR = PROJECT_ROOT / os.getenv("JOBS_DIR", "temp/jobs")
+OUTPUT_DIR = PROJECT_ROOT / os.getenv("OUTPUT_DIR", "output")
+JOBS_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
 LOG_COLORS = {
     logging.INFO: "\033[36m",    # Cyan
     logging.WARNING: "\033[33m", # Yellow
@@ -53,16 +59,12 @@ def is_api_mode(args=None) -> bool:
         return True
     return os.getenv("API_MODE") == "1"
 
-def get_test_mode() -> bool:
-    """Return True if running in test mode based on state.json or env."""
-    if os.getenv("TEST_MODE"):
-        return os.getenv("TEST_MODE") == "1"
-    try:
-        with open("state.json", "r", encoding="utf-8") as f:
-            state = json.load(f)
-        return state.get("env", {}).get("test_mode", False)
-    except Exception:
-        return False
+def get_test_mode(cli_flag: bool | None = None) -> bool:
+    """Determine test mode from CLI flag or TEST_MODE env var."""
+    if cli_flag is not None:
+        return bool(cli_flag)
+    env = os.getenv("TEST_MODE")
+    return env == "1" or str(env).lower() == "true"
 
 def save_ass_subtitles(segments, path):
     header = """[Script Info]
@@ -95,7 +97,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         start = to_ass_timestamp(segment["start"])
         end = to_ass_timestamp(segment["end"])
         clean_word = remove_punctuation(segment["word"])
-        text = clean_word.replace('\\', '\\\\').replace('{', '\{').replace('}', '\}')
+        text = clean_word.replace("\\", "\\\\").replace("{", r"\{").replace("}", r"\}")
         body += f"Dialogue: 0,{start},{end},Default,,0,0,0,,{text}\\N\n"
 
     with open(path, "w", encoding="utf-8") as f:
@@ -146,3 +148,11 @@ def init_job_log(job_id: str, test_mode: bool):
 def save_job_log(log: dict, output_dir: Path):
     with open(Path(output_dir) / "log.json", "w", encoding="utf-8") as f:
         json.dump(log, f, indent=2)
+
+
+def get_output_dir() -> Path:
+    return OUTPUT_DIR
+
+
+def get_jobs_dir() -> Path:
+    return JOBS_DIR

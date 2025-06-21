@@ -48,10 +48,11 @@ def test_generate_download_and_status(tmp_path):
     # log endpoint
     log_resp = client.get(f'/logs/{job_id}')
     assert log_resp.status_code == 200
+    assert 'placeholder' in log_resp.text
 
 
 def test_rate_limiting(tmp_path):
-    for _ in range(3):
+    for _ in range(5):
         submit_job()
     extra = client.post(
         '/generate',

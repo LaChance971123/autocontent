@@ -1,119 +1,91 @@
 import os
 from pathlib import Path
-import subprocess
-import logging
 import json
 import requests
 from dotenv import load_dotenv
+import wave
+import struct
+from io import BytesIO
+from pydub import AudioSegment
 
-from modules.utils import get_logger, ErrorCode, get_test_mode
+from .utils import get_logger, get_test_mode, ErrorCode
 
-# Load environment variables from .env
 load_dotenv()
 
-# Logger setup
-logger = get_logger(__name__)
-
-# Paths
+# Constants
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TEMP_DIR = PROJECT_ROOT / "temp"
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
-# Dummy audio generator
+logger = get_logger(__name__)
 
-def generate_dummy_audio(path: Path) -> None:
-    """
-    Generate a 1-second silent WAV file for testing.
-    """
+def generate_dummy_audio(path):
     try:
-        import wave, struct
         with wave.open(str(path), 'w') as wf:
             wf.setnchannels(1)
             wf.setsampwidth(2)
             wf.setframerate(44100)
-            duration_seconds = 1
+            duration_seconds = 2
             silence = [0] * int(44100 * duration_seconds)
             wf.writeframes(b''.join(struct.pack('<h', s) for s in silence))
         logger.info(f"Dummy audio generated at {path}")
     except Exception as e:
         logger.error(f"Failed to generate dummy audio: {e}")
 
-# ElevenLabs API interaction
-
-def call_elevenlabs_api(text: str, output_path: Path) -> bool:
+def call_elevenlabs_api(text, output_path):
     api_key = os.getenv("ELEVENLABS_API_KEY")
-    voice_id = os.getenv("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")
+    voice_id = os.getenv("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")  # Default voice ID
 
     if not api_key:
-        logger.error(f"{ErrorCode.ELEVENLABS_FAIL.value}: Missing API key")
+        logger.error(f"{ErrorCode.ELEVENLABS_FAIL.value}: API key missing")
         return False
 
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-    headers = {"xi-api-key": api_key, "Content-Type": "application/json"}
-    payload = {"text": text, "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}}
+    headers = {
+        "xi-api-key": api_key,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "text": text,
+        "voice_settings": {
+            "stability": 0.5,
+            "similarity_boost": 0.75
+        }
+    }
 
     try:
         response = requests.post(url, headers=headers, json=payload)
         if response.status_code == 200:
-            with open(output_path, "wb") as f:
-                f.write(response.content)
-            logger.info(f"ElevenLabs API MP3 saved to {output_path}")
+            content_type = response.headers.get("Content-Type", "audio/mpeg")
+            audio_data = response.content
+            if "mpeg" in content_type or output_path.suffix.lower() != ".wav":
+                seg = AudioSegment.from_file(BytesIO(audio_data))
+                seg = seg.set_frame_rate(44100).set_channels(1)
+                seg.export(output_path, format="wav")
+            else:
+                with open(output_path, "wb") as f:
+                    f.write(audio_data)
+            logger.info(f"Voiceover generated at {output_path}")
             return True
         else:
-            logger.error(f"{ErrorCode.ELEVENLABS_FAIL.value}: API error {response.status_code} - {response.text}")
+            logger.error(f"{ErrorCode.ELEVENLABS_FAIL.value}: {response.status_code} {response.text}")
             return False
     except Exception as e:
-        logger.error(f"{ErrorCode.ELEVENLABS_FAIL.value}: Exception during API call: {e}")
+        logger.error(f"{ErrorCode.ELEVENLABS_FAIL.value}: {e}")
         return False
 
-# Audio conversion
-
-def convert_mp3_to_wav(mp3_path: Path, wav_path: Path) -> bool:
-    """
-    Convert an MP3 file to a 44.1kHz mono WAV using ffmpeg.
-    """
-    try:
-        subprocess.run([
-            "ffmpeg", "-y",
-            "-i", str(mp3_path),
-            "-ar", "44100",
-            "-ac", "1",
-            str(wav_path)
-        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        logger.info(f"Converted MP3 to WAV: {wav_path}")
-        mp3_path.unlink(missing_ok=True)
-        return True
-    except Exception as e:
-        logger.error(f"{ErrorCode.VIDEO_RENDER_FAIL.value}: FFmpeg conversion failed: {e}")
-        return False
-
-# Main generator
-
-def generate_voiceover(script_text: str, output_path: Path, *, test_mode: bool | None = None) -> None:
-    """
-    Generate voiceover audio. In test mode, write dummy WAV; otherwise,
-    fetch MP3 from ElevenLabs then convert to WAV.
-    """
+def generate_voiceover(script_text, output_path, *, test_mode: bool | None = None):
     if test_mode is None:
         test_mode = get_test_mode()
-
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     if test_mode:
-        logger.info("Test mode active: generating dummy audio")
+        logger.info("Test mode active: using dummy audio and skipping ElevenLabs")
         generate_dummy_audio(output_path)
-        return
-
-    # 1) fetch raw MP3 from ElevenLabs
-    mp3_path = output_path.with_suffix(".mp3")
-    logger.info("Calling ElevenLabs API for MP3...")
-    if not call_elevenlabs_api(script_text, mp3_path):
-        raise RuntimeError(ErrorCode.ELEVENLABS_FAIL.value)
-
-    # 2) convert to WAV
-    logger.info("Converting MP3 to WAV...")
-    if not convert_mp3_to_wav(mp3_path, output_path):
-        raise RuntimeError(ErrorCode.ELEVENLABS_FAIL.value)
-
-    logger.info(f"Voiceover ready at {output_path}")
+    else:
+        logger.info("Calling ElevenLabs API...")
+        success = call_elevenlabs_api(script_text, output_path)
+        if not success:
+            logger.error(f"{ErrorCode.ELEVENLABS_FAIL.value}: generation failed")
+            raise RuntimeError(ErrorCode.ELEVENLABS_FAIL.value)

@@ -6,7 +6,7 @@ from .utils import get_logger, ErrorCode
 
 logger = get_logger(__name__)
 
-def render_final_video(background_video, audio_file, subtitle_file, output_path):
+def render_final_video(background_video, audio_file, subtitle_file, output_path, *, thumbnail: bool = False):
     logger.info(f"Using background video: {background_video}")
     logger.info(f"Using audio file: {audio_file}")
     logger.info(f"Using subtitle file: {subtitle_file}")
@@ -47,6 +47,20 @@ def render_final_video(background_video, audio_file, subtitle_file, output_path)
     try:
         subprocess.run(ffmpeg_cmd, check=True)
         logger.info(f"Final video rendered: {output_path}")
+        if thumbnail:
+            thumb = Path(output_path).with_suffix(".png")
+            subprocess.run([
+                "ffmpeg",
+                "-y",
+                "-i",
+                str(output_path),
+                "-ss",
+                "00:00:01",
+                "-vframes",
+                "1",
+                str(thumb),
+            ], check=True)
+            logger.info(f"Thumbnail saved to {thumb}")
     except subprocess.CalledProcessError as e:
         logger.error(f"{ErrorCode.RENDER_FAIL.value}: {e}")
         raise RuntimeError(ErrorCode.RENDER_FAIL.value) from e
