@@ -1,49 +1,43 @@
-# AutoContent
+# AutoContent CLI
 
-This project provides a simple pipeline for generating voiceovers, subtitles and merging them with a background video.
+Run the automated video generation pipeline.
 
-## Setup
+## Usage
 
-1. Create a virtual environment and install dependencies:
 ```bash
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+python pipeline.py --script PATH --background PATH [options]
 ```
 
-2. Copy `.env.example` to `.env` and set your ElevenLabs credentials.
-   - `ELEVENLABS_API_KEY` – API token for generating voiceovers
-   - `ELEVENLABS_VOICE_ID` – desired voice ID from ElevenLabs
-   - `TEST_MODE` – set to `true` to skip API calls and generate silent audio
-   - `JOBS_DIR` – directory for temporary per-job files
-   - `OUTPUT_DIR` – directory for rendered results
+### Options
+- `--output-dir DIR` – custom output folder
+- `--dry-run` – skip final video rendering
+- `--test-mode` – use dummy audio and subtitles
+- `--verbose` – debug logging
+- `--keep-temp` – keep temporary files
+- `--thumbnail` – export thumbnail image with title overlay
+- `--compress` – compress final video to ~1 Mbps
+- `--model-size SIZE` – WhisperX model size (e.g., `large-v2`)
+- `--cleanup-old N` – remove the oldest N folders in `output/`
+- `--json` – print a JSON summary
+- `--strict` – stop on first failure
+- `--max-length SECS` – trim scripts longer than this length (approx. 3 words/sec)
 
-3. Run the pipeline:
+Environment variable `API_MODE=1` suppresses info logs when not running with `--verbose`.
+
+### Example
+
 ```bash
-python pipeline.py scripts/test_script.txt assets/backgrounds/test_video.webm output
+python pipeline.py --script scripts/example.txt --background assets/bg.mp4 --thumbnail --compress --json
 ```
 
-### Running the API server
+## FastAPI Server
 
-Launch the FastAPI server to process jobs in the background:
+Run the API server to queue jobs via HTTP:
+
 ```bash
 uvicorn server:app --reload
 ```
-Submit a job by POSTing a script file and background path to `/jobs` then poll
-`/jobs/{job_id}` for status. When completed, download from
-`/jobs/{job_id}/result`.
 
-## Testing
+POST `/generate` with form fields `script_file` and `background_file` plus optional parameters `test_mode`, `verbose`, `strict`, `json`, `max_length`. The response contains a `job_id`.
 
-Run the test suite with:
-```bash
-pytest
-```
-
-## Docker
-
-A simple Dockerfile is provided:
-```bash
-docker build -t autocontent .
-docker run --env-file .env autocontent
-```
+GET `/status/{job_id}` returns the current job status and the output folder when complete.

@@ -1,0 +1,2 @@
+import pipeline
+print('ok')

@@ -1,7 +1,6 @@
 __pycache__/
 *.pyc
-.env
-logs/
 output/
 temp/
-jobs/
+.env
+*.log

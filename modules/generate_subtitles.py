@@ -1,52 +1,37 @@
-"""Subtitle generation using WhisperX."""
+from .utils import save_ass_subtitles, get_logger, get_test_mode, ErrorCode
 
-from __future__ import annotations
+logger = get_logger(__name__)
 
-import logging
-from pathlib import Path
-from typing import Optional
+def _generate_dummy_subtitles(path: str):
+    dummy = [
+        {"start": 0.0, "end": 1.0, "word": "test"},
+        {"start": 1.0, "end": 2.0, "word": "mode"},
+    ]
+    save_ass_subtitles(dummy, path)
 
-from .utils import get_test_mode, save_ass_subtitles
-
-logger = logging.getLogger(__name__)
-
-
-def generate_subtitles(
-    audio_path: Path, subtitle_path: Path, *, test_mode: Optional[bool] = None
-) -> None:
-    """Generate subtitles for ``audio_path`` and write to ``subtitle_path``.
-
-    When ``test_mode`` is True, an empty subtitle file is created instead of
-    running WhisperX.
-    """
+def generate_subtitles(audio_path, subtitle_path, *, model_size: str = "large-v3", test_mode: bool | None = None):
     if test_mode is None:
         test_mode = get_test_mode()
 
-    subtitle_path = Path(subtitle_path)
-    subtitle_path.parent.mkdir(parents=True, exist_ok=True)
-
     if test_mode:
-        subtitle_path.write_text("", encoding="utf-8")
-        logger.info("Dummy subtitles written to %s", subtitle_path)
+        logger.info("Test mode active: using dummy subtitles and skipping WhisperX")
+        _generate_dummy_subtitles(subtitle_path)
         return
 
+    logger.info("Transcribing with WhisperX")
+    import whisperx
+    import torch
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     try:
-        import torch
-        import whisperx
-
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        model = whisperx.load_model("large-v3", device, compute_type="float32")
-
-        result = model.transcribe(str(audio_path))
-        model_a, metadata = whisperx.load_align_model(
-            language_code=result["language"], device=device
-        )
-        result_aligned = whisperx.align(
-            result["segments"], model_a, metadata, str(audio_path), device
-        )
+        model = whisperx.load_model(model_size, device, compute_type="float32")
+        result = model.transcribe(audio_path)
+        model_a, metadata = whisperx.load_align_model(language_code=result["language"], device=device)
+        result_aligned = whisperx.align(result["segments"], model_a, metadata, audio_path, device)
         save_ass_subtitles(result_aligned["word_segments"], subtitle_path)
-        logger.info("Subtitles saved to %s", subtitle_path)
-    except Exception as exc:
-        logger.error("Failed to generate subtitles: %s", exc)
-        raise
+        logger.info(f"Subtitles saved to {subtitle_path}")
+    except Exception as e:
+        logger.error(f"{ErrorCode.WHISPERX_FAIL.value}: {e}")
+        raise RuntimeError(ErrorCode.WHISPERX_FAIL.value) from e
 
+if __name__ == "__main__":
+    generate_subtitles("temp/voice.wav", "temp/subtitles.ass")
