@@ -1,0 +1,1478 @@
+diff --git a/.env b/.env
+deleted file mode 100644
+index b4e9f23b440f94a620e28637fd64675bfdc6c7d3..0000000000000000000000000000000000000000
+--- a/.env
++++ /dev/null
+@@ -1,2 +0,0 @@
+-ELEVENLABS_API_KEY=sk_f044ce7ce71d37d46709036a9592c7f5eda7843569f087bd
+-ELEVENLABS_VOICE_ID=IRHApOXLvnW57QJPQH2P
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000000000000000000000000000000000000..a63d07f1edc11e7b67ec20aa91578491fbfe0a8a
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,6 @@
++# Copy to .env and fill in your API keys
++ELEVENLABS_API_KEY=
++ELEVENLABS_VOICE_ID=
++TEST_MODE=true
++JOBS_DIR=jobs
++OUTPUT_DIR=output
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000000000000000000000000000000000000..baa4285e00a1aaef491da963035e7bd9cd28a43b
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,7 @@
++__pycache__/
++*.pyc
++.env
++logs/
++output/
++temp/
++jobs/
+diff --git a/Dockerfile b/Dockerfile
+new file mode 100644
+index 0000000000000000000000000000000000000000..5a17faf50ead5dd33695db8193659bacfb6f0b36
+--- /dev/null
++++ b/Dockerfile
+@@ -0,0 +1,14 @@
++FROM python:3.10-slim
++
++WORKDIR /app
++
++RUN apt-get update && \
++    apt-get install -y ffmpeg && \
++    rm -rf /var/lib/apt/lists/*
++
++COPY requirements.txt requirements.txt
++RUN pip install --no-cache-dir -r requirements.txt
++
++COPY . .
++
++CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+diff --git a/Makefile b/Makefile
+new file mode 100644
+index 0000000000000000000000000000000000000000..611ec7bcadeed2b093eed6ba19482e5690cb04b6
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,2 @@
++test:
++pytest
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..877ed358e359f174887f5155e9925ccc00251dd2
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,49 @@
++# AutoContent
++
++This project provides a simple pipeline for generating voiceovers, subtitles and merging them with a background video.
++
++## Setup
++
++1. Create a virtual environment and install dependencies:
++```bash
++python -m venv venv
++source venv/bin/activate
++pip install -r requirements.txt
++```
++
++2. Copy `.env.example` to `.env` and set your ElevenLabs credentials.
++   - `ELEVENLABS_API_KEY` – API token for generating voiceovers
++   - `ELEVENLABS_VOICE_ID` – desired voice ID from ElevenLabs
++   - `TEST_MODE` – set to `true` to skip API calls and generate silent audio
++   - `JOBS_DIR` – directory for temporary per-job files
++   - `OUTPUT_DIR` – directory for rendered results
++
++3. Run the pipeline:
++```bash
++python pipeline.py scripts/test_script.txt assets/backgrounds/test_video.webm output
++```
++
++### Running the API server
++
++Launch the FastAPI server to process jobs in the background:
++```bash
++uvicorn server:app --reload
++```
++Submit a job by POSTing a script file and background path to `/jobs` then poll
++`/jobs/{job_id}` for status. When completed, download from
++`/jobs/{job_id}/result`.
++
++## Testing
++
++Run the test suite with:
++```bash
++pytest
++```
++
++## Docker
++
++A simple Dockerfile is provided:
++```bash
++docker build -t autocontent .
++docker run --env-file .env autocontent
++```
+diff --git a/load_state.py b/load_state.py
+deleted file mode 100644
+index 297d6ef80796c1e83b68b66bd3e3eba8ccc242f8..0000000000000000000000000000000000000000
+--- a/load_state.py
++++ /dev/null
+@@ -1,10 +0,0 @@
+-import json
+-import os
+-
+-def load_state():
+-    path = "state.json"
+-    if not os.path.exists(path):
+-        print("❌ state.json not found.")
+-        return {}
+-    with open(path, "r", encoding="utf-8") as f:
+-        return json.load(f)
+diff --git a/modules/__pycache__/__init__.cpython-310.pyc b/modules/__pycache__/__init__.cpython-310.pyc
+deleted file mode 100644
+index 664cb1dfe788ae5c41509c43acf67c8d58785cc8..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 127
+zcmd1j<>g`kf=Apg86f&Gh(HF6K#l_t7qb9~6oz01O-8?!3`HPe1o2DB$tuRNv?Sj-
+sKd&S;uOucnKczG$wKyg|J~J<~BtBlRpz;=n4Mfxqq_>y}NU$&f01QMKwEzGB
+
+diff --git a/modules/__pycache__/config.cpython-310.pyc b/modules/__pycache__/config.cpython-310.pyc
+deleted file mode 100644
+index 51138dd377b83cd2eae0ff6da9677cd5f9143fba..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 516
+zcmZWmO>Yx15Vf66;v`f;6$g$haX`7OLi4drg%D|2DS^<YtyI8@WNkCv)@5Ty-fbju
+zgfstv9{UgYExvL<`~@!HO@u&VG=AfGhc|C*y|YtCF7Cb$ufAf0z7@^CQFhI9cd}Cl
+zfB>h66_uoTK^VbEpzG2XZ-Zq~xy4Wd@3zFMf`}@VKVyub!YEW(O;Gbl)UwB-4)hcL
+zhykCWX6=X5MMq6+8>x<ggU*Fotw|89y};d?m^HQ>U&i?rYiI9y(&}{PB6Rr#+97m$
+zVXNP2_u_uHzc&w)u7Eh)@3gzUe$v_xFMvH5pN<C0<F}KQdeaS0UQSO&d(-vkwahZ9
+zF8yc{okvHL!QmMnOvn6H^v>7DKR+H1BR+oNOXU|%3eFX2v|0$2`>WW<_#zcq&}>+u
+zGgjI9G{h}ry~3^auC-LQ3eu=}AuQ!Qk*VOEQKz(7$nO3>-O@j^?fvNQ#K;(J?vQCX
+z{SEx|4-aO8n_LgIa<7)p78-7xq1jxkL|z8V50*aNa?jk~qHNazMfdQ-QXPB5!<10$
+G{rU||T97~h
+
+diff --git a/modules/__pycache__/generate_card.cpython-310.pyc b/modules/__pycache__/generate_card.cpython-310.pyc
+deleted file mode 100644
+index 7594068385dd302cd6dbf214729ed8e13c582afd..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 1377
+zcmY*ZOK;;g5avUYCD~RUn^$|-?y0RVZBeuhP%Mgi?POyhb%LxH3lJ$>HKY?IlI5l7
+zO|qbGz4{j{3fRZ~n%;Ts$=4qD(hilh$Wq|P`G(|hI5SkyY=#Kh-|yQOf4T_$Wy!-<
+z1M(yEk^ykUafX;3NrrR6NKP5e9p+%GqnVp~%*$)6mix@l0~X{V3-dawV<f^M=8kA^
+z7rG}JLyy<E|C`I29KS$uumt<47gOVQ^W<EZpc*<dxxN?oi;;>w6Si9?ox!Var+;AT
+zm3*+*eSXk4QAPHTdi}w13nteq-rxJ__^{RAyVI>!x}%r<<CpiVR!{aioo;{7Z6EdS
+z)&%9`S1CA8m2p+7GGXe)M2#nEFizCP8MS`iw-p#|fZEW@A231+U1E+EQFKT+;dDl)
+zR5^23(*>S7%Db#7pF7;0k*Rynyo!0+xeRPTG<t`AC)(u!4`&coMR<J&O>5_9>T5g?
+z7ib#r#x&GH2mSnbTG!z_#GASfyXd?QvkkD+&<*YJXhwAH3d^2`^{;oeKX2-Aficqc
+z4>@0%Hnk7-*1)dyV^ueYM2BGG-V5F2YrAOLd_7Rn<;r|jtu3&eDKuZV()<x$hx<i3
+zns4w&5QEJH0Y>LrI^r8TT2Q!0bh%ya-O*%$`6l0*5%7f0KeF7G4-~<6&(M?S&tkgV
+zfrv^Q-U?!D+_NGp<nk*}0dvaqtyn&_ge>PUEI$W$OXQcZ_a6}D)_)Ka;|!s60Mjg6
+za?l%O@RJzJZIG8Y7QVKy55OEazXe8r0U|#Eh>6^^vV}ez?TeeVRD<Fw{#X*w89EZz
+z5}po{o&{SU%&~PV9V_}uPK3H03u!CGI7-|=VU^>|)>o-yI%c8OWny%$E{vCq$6~|{
+zDN5tmf-_!qU@7f8HBJGurgm10-Uz9TCxwj!s~xs_ZFcm6x#Of%!uWY|C3q@JQv)0&
+zxqy%*Z$!Kz>tIGUEHnX_bCyVM91i}n$i`{#fBCbp;&*Q#$djAFb;`jZH%mvNH12gF
+zIXG#VaV%kh5)c}zVBYP(-ikRX`1%Ku-@;+<KYRB5X=|d2Hk>0y>NGF-BopQ7xfltV
+zC^4|kd@;T?%?~s-xaBth8zjULjqncjse^rN`#O9c4heMZ5Fc;B*r2O8f^Q4f%3atP
+zNAgn`3_b21R#~gkR3*rG;NUPle~?0(DCt`WEL4G~kgCd5b(071owe&fy}OG22cXh!
+M_0a}?f*+HA0ntHX1ONa4
+
+diff --git a/modules/__pycache__/generate_subtitles.cpython-310.pyc b/modules/__pycache__/generate_subtitles.cpython-310.pyc
+deleted file mode 100644
+index b28a3d8181fd082a67fa80f8b12d135913b01ec1..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 964
+zcmZWnO>fgM7`C0H$+~uo9)`GuV}KQj-6n*9AtWxl3<+davb@-9vn6q4J1MJD329vS
+z3lP$F<S*sQiNC-F-lXf8gr(Qc`}Mp}9$O8EeFV!scstv75c=6VcNfIaD=_m8Hh~0A
+z5nY{_;?5_Oz)4akbE%7waD@96QBU@ScSiIh>4~23F9>AtQD;%`3$V~(gqxA!m1Nu)
+zX3Arm*i@RBw8@(l!0Ce>fSE6_SwOhJ7+HKuuAFP6HwDSDaF)cnr=D<YB4FO7vvg|b
+zs#l|HymTSs*RJp%BFF}pWI~qSvS;0^0HPZZ^=hcB$+fri0l#14Z|FPerfk%{*n|q)
+z@kd7}8XPVTK4_ksSSQCxJ`LxIorND~i7BN16g~-gnoRRd<~BT0I-Dylc2il&G_*-3
+zjpbQk#^Z70#--rYiHmX(q+CzsZna1KlT>lL_dLRM5UZ>xtz`DRkPVdN(~?hRMCfq+
+z&0-~F(-X2vVkj|k+Kx4g$M3U3t4fOSjBBpW<gT&jsSIx=4qMelXjMpuEkU+!jrxsO
+z=p?s|XO)g;y1jimNDSi@Pf~uI!kqc)Uq916kQFQg5-IK5wI-5ockxb#o2=J4y1m&b
+zX!^VqiDCt}vu3y^)w$Y(ipJ|8o1T`YOfB_0m+>aZq~(HJPPbMm*1<~g1L=Fv`1|Rb
+z{mJXnssoi<P+|g&CA_G~ROV81&~iP@jEnPT^nbVqC}tbB0FTHv?vow7gSW^C>-#OS
+zfU%4xIb(}0E3@KRr9k-coL7rc=l_F;7ajQxQATe-qi&xu9p2Cxmo`aFC&n#o&NIna
+f_ZN4zmPr%5SoOWc;H}63y#NnzK!V{GcK`eZlI|2F
+
+diff --git a/modules/__pycache__/generate_voiceover_elevenlabs.cpython-310.pyc b/modules/__pycache__/generate_voiceover_elevenlabs.cpython-310.pyc
+deleted file mode 100644
+index 47e0f352623550bcd07c4cf74f97668627b10e1c..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 831
+zcmZWn&2AGh5MFz|$u|9=s!GLyL#~TNl{QJYK?sqCpax2RC~B!yX|;`=cGb-~*xrR!
+z>4kEwcm+7}O1^U90k|L}m`zk#i5bt>V~@t)e72aLE?FQCezs2DVaxiS2e*Yl@Dxlv
+z2gfXiVvFW8j!_>|+_$NXEM`-}2z5A-^W0JQc!4>W=p$kUUSvgH>=EX&iBE*O4DDK8
+z=?B!ZHa%?IW1essYHo-MGfu1OH0V`owJ!HzEU~K3YAb%FQK_zkje29b>-XxMh5l--
+zT3>1ODy#kxqw}5D>&?N|+l?&QulqYMws+Q-x6jvKMM_1<ak;(G-fM4eG}m^6=5{A|
+z**+)>S>D^~wAw-ESvg9|i#*BlJ(waXl0Hv#ISXYJ9>rWOnn~4_(Le`-P@kAdk?KJ@
+z4!S_tKXG8?g0;ZZ8*thh0$mI<`^x@2b%BTY3;JqZ*!w^q0lfs`5_ic`3-1xKay<ak
+zcxY>z5lxtLMJ|YThGd8?F_3Hlb%jlX<hhgT-osT78J8zr!Jtcem&ZKgNzfOGh+!iQ
+z;~-n|h#{JP(A3F9)aBIa3&vww3<ptg%Fn!lA!5K2LnIHG%-b>UH8W=Jf99kODV`(q
+zUm^334eHUtm>=qdDT~B6OU}T-FMsXPVKddDB@zvU9>UEj(0O?M;=u@!$hZu~(Btq(
+zEe_7i-2WN*7gh7%W>E><|ATFe##;D2Q<SrC;7u4T6fND98g(<mE2khqPJ%PD?VBfV
+mODUwWm6oFlBh<Itojl)tJcj)QL8S7&T);puK`wUD0{#n=Y1dT%
+
+diff --git a/modules/__pycache__/render_final_video.cpython-310.pyc b/modules/__pycache__/render_final_video.cpython-310.pyc
+deleted file mode 100644
+index e3460102594c5b2e6ccf58c0058fb361e63d144c..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 1546
+zcmah}OK&4Z5bo|7&y1ZouZ3(L3m5@HmSX2Y!okGhwb~0PNbE{T<3v_xx^0g$FS^@y
+zJhCMuR$}+CKLA#doa6ok{>ofAafMqX2sPv2<t5Rhs_v@ps;;l9dctC{fM6Ui-S50<
+zBJ@)#{B`Icd;}yv2gVS?9<rx1ws9sCn`E<QYuT*ZIwMSbjO-jYn0`*g+dRi|%wXoX
+z8U_y!Gb&p@gGY4iXz6r2(pXl3Ql0z-*a%PHG$U7JtSQ_j6OCz1XSpkFrq^eB<BH6*
+zIcAQu=ZIOC+Sp)uR$y}@9S8yC*!;*~MYaI6$d=eLTVZ$DE9_OaIwI}WvB~Z}Mc<(o
+zW@~Kyu{E}o-p!3Hw($&)^P~L4xI!4k8_MijBa>~id(Q|)Um>>n6v3{R?y7vZFqvbo
+zjR?f>`lWV-0XYKX|8r)5%5NNB<CAN=Z5vcduB1J8MxFDv2zvpO@uK2VHTy2(VRgXI
+z{J1!viVL5L^J)~d<9uVM);|TydfaWu-kCc6ps@!U=}?c?-`hK=Rd%;pAsDE-XrIw7
+zC-g$$bZ8K8&v!4ls8d?ssqP*$20qwkF4AS#=fb1I`a$iWc56?2Ds1$_o;tOSR?Clg
+zJ0_JOkQ*;nTCN9iHJ#9pJbn@D6`w}2F+Cn@yEO_br`ESk&po@?dw)N+Dv^89Z28JI
+zhrRy(-cFRApteS-6Xz?k6N(i40|)wIHZZJmKzD%TAuxvTqto><dV=JpLR~x|jEvB8
+zbV<@0WSVJ(^hu6ob$Nn>@ip}DLsZs}%X)%GBJIBfR|J7M-Y9;_1IC3Lv`Z~Fpk8U3
+z{%W<<{^9#{{P<znNHjT=i6Iq(ge19va1~E-Ew3j#iLP891nF@em2rZd7dX*b81NV9
+zdh3(g$;Xh$Ps2d*K%Mv@>v>$Bi0sa0cHwQkqhVso$c0LYcT>1az$~oe6<mN%|BZa3
+z-^6eIhvA_YLiy!U_0}3<FccMSt{%ZM=XAJp9+!)aFFrdhJ$Q+*G<C&UN%kCvOWEpq
+z-mq3maG^Y(n1V+hb$CKTndlK!fU_IAL6TP;!6}1uCB~y{3DDs>l@y?xA`zyp5>501
+zVE_UFza1njVC6zmpgrb>&CFXd?LAj{d@9aCUZb9x3Oek`r10`(*!kHzuowQ`dx_@w
+zOf16%307h;y{(wCG=0g+ztfe5B9DO0lQq1G3p%+WCV@Qv^CK9vzv|2Lc;2*Ny@YjQ
+z;We!PZh@V6C-rYNn?7}eW;0$;+>f^Vq3iJKfcE2+O#Tz2tiqd(?@lppPpdu+t?Ebn
+zWmBZTMR6}>S<=?iRr<S}T@z5BH=9#@8OV%fAg#k`R~@CVMXms|@a!Yj4g`Ml2Zi*l
+AW&i*H
+
+diff --git a/modules/__pycache__/render_video.cpython-310.pyc b/modules/__pycache__/render_video.cpython-310.pyc
+deleted file mode 100644
+index 1ff1aadc3cd5e13068176a6eea74bba1f96a27e8..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 1338
+zcmZ8h%Wu?17@rwGcC&eGvb-rEivwsSLK9R~up(7M)ErZ!fKZ)9E5|dNxOi=AX1pYp
+z7a;-a1<HXV1QH1eaply%#YZ@Cf&-@<P`|OA?6xzS`5wP-zNhSPa<YbCJ@{*B^Sp`B
+zCnbz70>ZCwgasEx6#K|ll=!$uY=RNhsQwt)8pW%qX?zANw9>?xe$$bguCBy#Re&CW
+zvjj(UF+vi&rRXKvA&)Rt5=rrhq@`p;(o^kFf>)35F4;o^ByoyM9s>`aay<cFD|szN
+zyV@QSix9yW#-nHzr8q}c05ONLbA;r`8X%Qn9tx3q9>t(lI<`l44O*k)dt{)~2|7uq
+z0EOIg3VG2wolf<ah|cV2v_X%+IZBVw<MaeQNl$?-<haoo7|Dz@|E#12Jxzaj20ewS
+zXNL9OK`O3}z^1zW0i%J5QBnt+vqj%hQ_(x<53n1U4@_lUaQE?j)I7HmThQ{aZ~lJ$
+z<)7!)ZQ%tQ*1F@~+u&gwP^<4z7PhSTL}B!<v~XhTg;v+|8DOV#?8Q!riFjRl(q{*7
+zqk!L9zsE9)r4_;K;gtpIk2_DT8~+Pt1);RMDtPHy87&^h`wx7!^szb`a@1lUxA*an
+z`?!^mcFQ)q-Co2t5;D6D$4lz7P=RE;<A%M+XIn{gZLZb7D_qBC3-fbV=UVgEuFPE$
+zObUlD%wIaFOe|bX^owi#yNN#AbD~63tTx|rKz3VwyW)H6TUUPmDHk1Ea~wArn-!ZO
+zmrTf8O>7(PCUfuQo%{IeiM8wnj$icJ;w+$yGgbYWvb^PGm3E1!0d*bdJiXi;%Z!M7
+zf#m8#%qpCT(C@R%WLut)BGZKAN*no(%d#4zAMwy-0uUYtc4Nu$!OhJ=_Z#OSZ&vK-
+z;q*KC^zB+c?T(suHhIv4T(rl-e5M^WQ~TH<ro;||K1Ph%wW8}Cw?{L~-XmUzWcM%J
+zXtft(87_r^WPxn=LK^!_w2ShK$d{w-tWheuszrs`fcIhrt|?sX2{M7zu97LN<0@zm
+z?vsRQ1T<Ala1FG@CfLOKH&UO%NAWaZ$8q%``Oas+WmD(lK(dM|0mhhjHb?TbN3LmQ
+UR=r;2{R{lDkbqw#s;W%Lze=8Ml>h($
+
+diff --git a/modules/__pycache__/subtitles.cpython-310.pyc b/modules/__pycache__/subtitles.cpython-310.pyc
+deleted file mode 100644
+index 7b8004f407ea685e43bd6e1e1a347bafa83fa78a..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 2733
+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
+TITVr7bxjv0QZ3uMP%{4l%XYbK
+
+diff --git a/modules/__pycache__/utils.cpython-310.pyc b/modules/__pycache__/utils.cpython-310.pyc
+deleted file mode 100644
+index 58d6f4e7971627ab137e66ac1b990c14952298b2..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 1692
+zcmaJBU2oeqkd)+DQJlnS({w9_O(=#9MpZ-Z(k?K9V$By;p!15lYn#Mrz>2gZRF*uF
+zif2~_2BfdUen3zldECF)@8Ij6@)xp)?Wn{-wg4q{pFEy;$2%s|(++~s`Fm~e*8)O+
+zY2orPK==+o%mbo`;s|XaYEbh%+QJk!QN=oe71Ri{<#?2UnFLq`5Pt%qcx0UI8ky9h
+zh4*M=(TPzZLu+WqA5COtHbIM@q60iC=DeNrc4mQoGUq3=$s<G^I(2LSEz#+m&d}Lo
+zW8`E7TF#1xh|Xm;;A@!!`1*(9w`f%Oc}C(4(|LM>F8pTxULH+lQ%6Q-WQCjP7-RGj
+z;<8{Km>9Swsv)u22fdz~09seM*&ts+gxk%4hdt>&j@!wOb0$0=^jO{9U#$B69cML(
+zqELiMEb49};aw6rPa`sT#>A_-`@mlsOPh7K<}dlqOHO)CIf%f+J;&L8v3SSLMX}>-
+z=<O2RkS_DwjU<-w1t-EG=$`VhOZWi(nWWrvn=D9TdP(tPDx)xF<MkC1yuIL)h<fg0
+zNun_D+@E5~xHbhRl80{@>;yI-5qot`H-Yv@5XK$PeH3>hFkMMFY|D@9x##}^t35)K
+zJ{Uz|C+@Ns9Q{CeCybwrnP+3>h3BrvK|;Z)bDo4X)+T8ry%iF77#Cix=6hd#@B171
+z$XOr8#>NHfYl8=iS_|ymn&;=U27(4XYu-12?}Mzr`-?yz*X#RmxJ!9{LIzA{Q4$Vk
+zUXLL^=dm^Nynif;cAEvT={fsFIst})9}nm$WCJt-#A`qjWzY?`bfx1negXO^myKLD
+z7WA5_c?}2n6GY8<t+SwttwZRZ%%BrFHFH|bpqCD<4@Ia`yAhUW5IR|gU!71u3e!_u
+zSEhfDDqO8#Wrne=6jV{<)gn}34~j>qVmFLa$%L|CL2OL~kepEbf%r5yIsIa#-g=bE
+zWEH9q7FykerV$gZRECkL_6DjflU*Xjt_-_ONYd?HhiyW?EhSvWB|MLB<Dn<WKFiHS
+z`bLHlJXDvX1j<Z2tp4A@f6}N^s#BS#5#oc?9KrKLjSL-|5VqME7Pnuw`Yo}eP{mLN
+zXUc@1K)jZOOUa`+LwdKm##uLkv-Hw9kSUSSu(v=j^dmNdht-cA^y*e#);<dmH<!v}
+zF;!L{dgBzghDNKU@H-&y6dnN?4NGewiIPqV9q)Um*c;Ay<D$=t)%U!i*=jfn_lJd4
+zw(l-M5H>sSlZvT|ob@6SFl8k@7OO&^hmuuF$`-7n`wgzJN93NG*kc6xlh4B8xPHEs
+z^(LVMee<~;zo8cv0Bt!z#7MlW56$((Dcru2v8yRD!BXh7S=gSni<W7_MeF$){v4N$
+mGQRx}{~DGn2A>0x^OxM}!s7XD*vn`2^iW^3umIVpWc&+P0>)<m
+
+diff --git a/modules/__pycache__/voiceover.cpython-310.pyc b/modules/__pycache__/voiceover.cpython-310.pyc
+deleted file mode 100644
+index 7e0b8969d3e2f7a7926c8e0fe8c08139ccdcdcf3..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 3027
+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
+
+diff --git a/modules/config.py b/modules/config.py
+index 2701b2b9731bc4eafeb2dad98563b4bca4d705f7..bf33d17ca85a021afcc0988a7409a51b662543b9 100644
+--- a/modules/config.py
++++ b/modules/config.py
+@@ -1,12 +1,14 @@
+ import os
+ from dotenv import load_dotenv
+ 
+-# Resolve .env path relative to this file
++"""Configuration helpers for environment variables."""
++
++# Resolve .env path relative to project root
+ env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+ load_dotenv(dotenv_path=env_path)
+ 
+-ELEVENLABS_API_KEY = "sk_f044ce7ce71d37d46709036a9592c7f5eda7843569f087bd"
+-VOICE_ID = "IRHApOXLvnW57QJPQH2P"
++ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
++VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID")
+ 
+ if not ELEVENLABS_API_KEY or not VOICE_ID:
+     raise EnvironmentError("Missing ELEVENLABS_API_KEY or VOICE_ID in .env or environment variables.")
+diff --git a/modules/generate_subtitles.py b/modules/generate_subtitles.py
+index 0dba1e74a92bda0752acc67044b686daf8190bcd..a8627d73ca180ae6f34df4c40ac78ef7cf6fd90c 100644
+--- a/modules/generate_subtitles.py
++++ b/modules/generate_subtitles.py
+@@ -1,20 +1,52 @@
+-import os
+-import whisperx
+-import torch
+-from modules.utils import save_ass_subtitles
++"""Subtitle generation using WhisperX."""
+ 
+-def generate_subtitles(audio_path, subtitle_path):
+-    print("Transcribing with WhisperX + alignment for word-level timestamps...")
++from __future__ import annotations
+ 
+-    device = "cuda" if torch.cuda.is_available() else "cpu"
+-    model = whisperx.load_model("large-v3", device, compute_type="float32")
++import logging
++from pathlib import Path
++from typing import Optional
+ 
+-    result = model.transcribe(audio_path)
+-    model_a, metadata = whisperx.load_align_model(language_code=result["language"], device=device)
+-    result_aligned = whisperx.align(result["segments"], model_a, metadata, audio_path, device)
++from .utils import get_test_mode, save_ass_subtitles
+ 
+-    print(f"Improved karaoke-style subtitles saved to {subtitle_path}")
+-    save_ass_subtitles(result_aligned["word_segments"], subtitle_path)
++logger = logging.getLogger(__name__)
++
++
++def generate_subtitles(
++    audio_path: Path, subtitle_path: Path, *, test_mode: Optional[bool] = None
++) -> None:
++    """Generate subtitles for ``audio_path`` and write to ``subtitle_path``.
++
++    When ``test_mode`` is True, an empty subtitle file is created instead of
++    running WhisperX.
++    """
++    if test_mode is None:
++        test_mode = get_test_mode()
++
++    subtitle_path = Path(subtitle_path)
++    subtitle_path.parent.mkdir(parents=True, exist_ok=True)
++
++    if test_mode:
++        subtitle_path.write_text("", encoding="utf-8")
++        logger.info("Dummy subtitles written to %s", subtitle_path)
++        return
++
++    try:
++        import torch
++        import whisperx
++
++        device = "cuda" if torch.cuda.is_available() else "cpu"
++        model = whisperx.load_model("large-v3", device, compute_type="float32")
++
++        result = model.transcribe(str(audio_path))
++        model_a, metadata = whisperx.load_align_model(
++            language_code=result["language"], device=device
++        )
++        result_aligned = whisperx.align(
++            result["segments"], model_a, metadata, str(audio_path), device
++        )
++        save_ass_subtitles(result_aligned["word_segments"], subtitle_path)
++        logger.info("Subtitles saved to %s", subtitle_path)
++    except Exception as exc:
++        logger.error("Failed to generate subtitles: %s", exc)
++        raise
+ 
+-if __name__ == "__main__":
+-    generate_subtitles("temp/voice.wav", "temp/subtitles.ass")
+diff --git a/modules/generate_voiceover_elevenlabs.py b/modules/generate_voiceover_elevenlabs.py
+deleted file mode 100644
+index c0e18020d9c22221050e8587b49871fd267923aa..0000000000000000000000000000000000000000
+--- a/modules/generate_voiceover_elevenlabs.py
++++ /dev/null
+@@ -1,21 +0,0 @@
+-import os
+-from elevenlabs import generate, save
+-
+-ELEVENLABS_API_KEY = "sk_f044ce7ce71d37d46709036a9592c7f5eda7843569f087bd"
+-VOICE_ID = "IRHApOXLvnW57QJPQH2P"
+-
+-if not ELEVENLABS_API_KEY or not VOICE_ID:
+-    raise EnvironmentError("Missing ELEVENLABS_API_KEY or VOICE_ID in .env or environment variables.")
+-
+-def generate_voiceover(script_path: str, output_path: str):
+-    with open(script_path, "r", encoding="utf-8") as f:
+-        script = f.read()
+-
+-    audio = generate(
+-        text=script,
+-        voice=VOICE_ID,
+-        model="eleven_monolingual_v1",
+-        api_key=ELEVENLABS_API_KEY
+-    )
+-
+-    save(audio, output_path)
+\ No newline at end of file
+diff --git a/modules/main.py b/modules/main.py
+deleted file mode 100644
+index 961d034fbf8ebb5c9af8eaeeb9ae338b4498333b..0000000000000000000000000000000000000000
+--- a/modules/main.py
++++ /dev/null
+@@ -1,78 +0,0 @@
+-import argparse
+-import os
+-import json
+-from pathlib import Path
+-from dotenv import load_dotenv
+-import logging
+-
+-# Load environment variables
+-load_dotenv()
+-
+-# Constants
+-PROJECT_ROOT = Path(__file__).parent
+-STATE_FILE = PROJECT_ROOT / "state.json"
+-REQUIRED_FOLDERS = [
+-    "modules",
+-    "assets/backgrounds/clipgoat",
+-    "assets/backgrounds/minecraft",
+-    "assets/backgrounds/gta",
+-    "assets/backgrounds/climber",
+-    "test_inputs",
+-    "output",
+-    "logs",
+-    "temp"
+-]
+-
+-# Setup logging
+-log_path = PROJECT_ROOT / "logs" / "runtime.log"
+-logging.basicConfig(filename=log_path, level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+-
+-def create_folders():
+-    for folder in REQUIRED_FOLDERS:
+-        path = PROJECT_ROOT / folder
+-        path.mkdir(parents=True, exist_ok=True)
+-        logging.info(f"Verified folder: {folder}")
+-
+-def load_state():
+-    if not STATE_FILE.exists():
+-        print("❌ state.json not found.")
+-        return None
+-    with open(STATE_FILE, "r") as f:
+-        return json.load(f)
+-
+-def validate_env():
+-    eleven_key = os.getenv("ELEVENLABS_API_KEY")
+-    if not eleven_key:
+-        print("❌ ELEVENLABS_API_KEY not found in .env")
+-        return False
+-    print("✅ ElevenLabs key found (but not validated to save tokens).")
+-    return True
+-
+-def run_cli():
+-    parser = argparse.ArgumentParser(description="AutoContent CLI")
+-    parser.add_argument("--init", action="store_true", help="Create necessary folders and check environment.")
+-    parser.add_argument("--dry-run", action="store_true", help="Run in test mode (no real API calls).")
+-    parser.add_argument("--debug", action="store_true", help="Enable debug output.")
+-    parser.add_argument("--validate-env", action="store_true", help="Check for .env and keys.")
+-    args = parser.parse_args()
+-
+-    if args.debug:
+-        print("⚙️ Running in DEBUG mode")
+-        logging.getLogger().setLevel(logging.DEBUG)
+-
+-    if args.init:
+-        print("🔧 Initializing project...")
+-        create_folders()
+-        print("✅ Folders ready.")
+-
+-    if args.validate_env:
+-        validate_env()
+-
+-    if args.dry_run:
+-        print("🧪 Running in dry-run mode. No API calls will be made.")
+-        logging.info("Dry-run mode enabled.")
+-
+-    logging.info("CLI execution completed.")
+-
+-if __name__ == "__main__":
+-    run_cli()
+diff --git a/modules/render_final_video.py b/modules/render_final_video.py
+deleted file mode 100644
+index 72fedc539403d12ca79ee407c3fbcf5e25343d6e..0000000000000000000000000000000000000000
+--- a/modules/render_final_video.py
++++ /dev/null
+@@ -1,57 +0,0 @@
+-
+-import os
+-import subprocess
+-import sys
+-import threading
+-import time
+-
+-def render_final_video(audio_path, subtitle_path, output_path):
+-    # Normalize paths for ffmpeg (use forward slashes)
+-    subs = subtitle_path.replace('\\', '/')
+-    background = os.path.join('assets', 'backgrounds', 'test_video.webm').replace('\\', '/')
+-    watermark = os.path.join('assets', 'watermark.png').replace('\\', '/')
+-
+-    # Burn in ASS subtitles (so karaoke tags work), then overlay watermark
+-    filter_complex = (
+-        f"[0:v]ass={subs}[subt];"
+-        "[2:v]scale=325:-1,format=rgba,colorchannelmixer=aa=0.15[wm];"
+-        "[subt][wm]overlay=5:5:format=auto[vout]"
+-    )
+-
+-    cmd = [
+-        'ffmpeg',
+-        '-y',  # overwrite output
+-        '-i', background,       # input 0: background video
+-        '-i', audio_path,       # input 1: voiceover audio
+-        '-i', watermark,        # input 2: watermark image
+-        '-filter_complex', filter_complex,
+-        '-map', '[vout]',       # use the filtered video
+-        '-map', '1:a',          # use the voiceover audio
+-        '-c:v', 'libx264',
+-        '-pix_fmt', 'yuv420p',
+-        '-c:a', 'aac',
+-        '-shortest',
+-        output_path
+-    ]
+-
+-    # Simple spinner for feedback
+-    done = False
+-    def spinner():
+-        for c in ['|', '/', '-', '\\']:
+-            while not done:
+-                sys.stdout.write(f"\rRendering final video... {c}")
+-                sys.stdout.flush()
+-                time.sleep(0.1)
+-
+-    t = threading.Thread(target=spinner)
+-    t.start()
+-    try:
+-        subprocess.run(cmd, check=True)
+-    finally:
+-        done = True
+-        t.join()
+-        sys.stdout.write(f"\r[OK] Final video rendered successfully: {output_path}\n")
+-
+-
+-if __name__ == '__main__':
+-    render_final_video('temp/voice.wav', 'temp/subtitles.ass', 'output/final_render.mp4')
+diff --git a/modules/render_video.py b/modules/render_video.py
+index a51ec94cd80c663b16fcce0efb02da9b32f1d946..716a14a103175ed909a5b8eabe26e67812c27459 100644
+--- a/modules/render_video.py
++++ b/modules/render_video.py
+@@ -1,49 +1,77 @@
++"""Video rendering helpers using FFmpeg."""
+ 
++from __future__ import annotations
++
++import logging
+ import subprocess
+ from pathlib import Path
++from typing import Optional
++
++from .utils import get_test_mode
++
++logger = logging.getLogger(__name__)
++
+ 
+-def render_final_video(background_video, audio_file, subtitle_file, output_path):
+-    print(f"[INFO] Using background video: {background_video}")
+-    print(f"[INFO] Using audio file: {audio_file}")
+-    print(f"[INFO] Using subtitle file: {subtitle_file}")
+-    print(f"[INFO] Output path: {output_path}")
++def render_final_video(
++    background_video: Path,
++    audio_file: Path,
++    subtitle_file: Path,
++    output_path: Path,
++    *,
++    test_mode: Optional[bool] = None,
++) -> None:
++    """Render the final video using FFmpeg."""
++
++    if test_mode is None:
++        test_mode = get_test_mode()
+ 
+     background_video = Path(background_video).resolve()
+     audio_file = Path(audio_file).resolve()
+     subtitle_file = Path(subtitle_file).resolve()
+     output_path = Path(output_path).resolve()
+ 
+     if not background_video.exists():
+-        print(f"[ERROR] Background video not found: {background_video}")
++        logger.error("Background video not found: %s", background_video)
+         return
+     if not audio_file.exists():
+-        print(f"[ERROR] Audio file not found: {audio_file}")
++        logger.error("Audio file not found: %s", audio_file)
+         return
+     if not subtitle_file.exists():
+-        print(f"[ERROR] Subtitle file not found: {subtitle_file}")
++        logger.error("Subtitle file not found: %s", subtitle_file)
+         return
+ 
+-    subtitle_path_escaped = str(subtitle_file).replace('\\', '/').replace(':', '\\:')
++    subtitle_path_escaped = str(subtitle_file).replace("\\", "/").replace(":", "\\:")
+ 
+     ffmpeg_cmd = [
+         "ffmpeg",
+         "-y",
+-        "-i", str(background_video),
+-        "-i", str(audio_file),
++        "-i",
++        str(background_video),
++        "-i",
++        str(audio_file),
+         "-filter_complex",
+         f"[0:v]scale=1080:1920,setsar=1,subtitles='{subtitle_path_escaped}'[v]",
+-        "-map", "[v]",
+-        "-map", "1:a",
+-        "-c:v", "libx264",
+-        "-c:a", "aac",
++        "-map",
++        "[v]",
++        "-map",
++        "1:a",
++        "-c:v",
++        "libx264",
++        "-c:a",
++        "aac",
+         "-shortest",
+-        str(output_path)
++        str(output_path),
+     ]
+ 
++    if test_mode:
++        output_path.parent.mkdir(parents=True, exist_ok=True)
++        output_path.write_text("", encoding="utf-8")
++        logger.info("Dummy video created at %s", output_path)
++        return
++
+     try:
+         subprocess.run(ffmpeg_cmd, check=True)
+-        print(f"[OK] Final video rendered: {output_path}")
+-    except subprocess.CalledProcessError as e:
+-        print("[ERROR] FFmpeg rendering failed.")
+-        print(e)
++        logger.info("Final video rendered: %s", output_path)
++    except subprocess.CalledProcessError as exc:
++        logger.error("FFmpeg rendering failed: %s", exc)
+ 
+diff --git a/modules/subtitles.py b/modules/subtitles.py
+deleted file mode 100644
+index df8a290266734124cceeff70ead10aaaf9fb335c..0000000000000000000000000000000000000000
+--- a/modules/subtitles.py
++++ /dev/null
+@@ -1,70 +0,0 @@
+-import os
+-from pathlib import Path
+-import logging
+-import tempfile
+-import whisper
+-from dotenv import load_dotenv
+-import subprocess
+-
+-# Setup
+-load_dotenv()
+-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+-TEMP_DIR = PROJECT_ROOT / "temp"
+-LOG_PATH = PROJECT_ROOT / "logs/runtime.log"
+-TEMP_DIR.mkdir(parents=True, exist_ok=True)
+-logging.basicConfig(filename=LOG_PATH, level=logging.INFO)
+-
+-# Subtitle style constants
+-SUBTITLE_FONT = "Bangers"
+-SUBTITLE_POSITION = "center"
+-SUBTITLE_SIZE = "48"
+-
+-def transcribe_audio_to_srt(audio_path):
+-    try:
+-        model = whisper.load_model("base")
+-        result = model.transcribe(str(audio_path))
+-        segments = result['segments']
+-        return segments
+-    except Exception as e:
+-        logging.error(f"Whisper transcription failed: {e}")
+-        return []
+-
+-def generate_ass_file(segments, output_path):
+-    try:
+-        with open(output_path, "w", encoding="utf-8") as f:
+-            f.write("[Script Info]\n")
+-            f.write("ScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\n\n")
+-            f.write("[V4+ Styles]\n")
+-            f.write("Format: Name, Fontname, Fontsize, PrimaryColour, BackColour, Bold, Italic, "
+-                    "Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, "
+-                    "Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n")
+-            f.write(f"Style: Default,{SUBTITLE_FONT},{SUBTITLE_SIZE},&H00FFFFFF,&H00000000,0,0,0,0,100,100,"
+-                    f"0,0,1,3,1,2,30,30,100,1\n\n")
+-
+-            f.write("[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")
+-
+-            for segment in segments:
+-                start = format_time(segment['start'])
+-                end = format_time(segment['end'])
+-                text = segment['text'].replace("\n", " ").strip()
+-                f.write(f"Dialogue: 0,{start},{end},Default,,0,0,0,,{text}\n")
+-        logging.info(f"ASS subtitle file created at {output_path}")
+-    except Exception as e:
+-        logging.error(f"Failed to write ASS file: {e}")
+-
+-def format_time(seconds):
+-    hrs = int(seconds // 3600)
+-    mins = int((seconds % 3600) // 60)
+-    secs = int(seconds % 60)
+-    ms = int((seconds - int(seconds)) * 100)
+-    return f"{hrs:01d}:{mins:02d}:{secs:02d}.{ms:02d}"
+-
+-def generate_subtitles(audio_path, output_path):
+-    try:
+-        segments = transcribe_audio_to_srt(audio_path)
+-        if not segments:
+-            print("[ERROR] No segments returned from Whisper.")
+-            return
+-        generate_ass_file(segments, output_path)
+-    except Exception as e:
+-        logging.error(f"Subtitle generation failed: {e}")
+diff --git a/modules/update_state.py b/modules/update_state.py
+deleted file mode 100644
+index 0066054d67ba98e67fd9d7be9622f244f71b4a8e..0000000000000000000000000000000000000000
+--- a/modules/update_state.py
++++ /dev/null
+@@ -1,29 +0,0 @@
+-import json
+-import argparse
+-from pathlib import Path
+-
+-STATE_FILE = Path(__file__).resolve().parent.parent / "state.json"
+-
+-def update_state(module, status):
+-    if not STATE_FILE.exists():
+-        print("[ERROR] state.json not found.")
+-        return
+-
+-    with open(STATE_FILE, "r") as f:
+-        state = json.load(f)
+-
+-    if module in state.get("modules", {}):
+-        state["modules"][module] = status
+-        with open(STATE_FILE, "w") as f:
+-            json.dump(state, f, indent=2)
+-        print(f"[OK] Updated module '{module}' to status: '{status}'")
+-    else:
+-        print(f"[ERROR] Module '{module}' not found in state.json.")
+-
+-if __name__ == "__main__":
+-    parser = argparse.ArgumentParser(description="Update module status in state.json")
+-    parser.add_argument("--module", type=str, required=True, help="Module name to update")
+-    parser.add_argument("--status", type=str, required=True, help="New status (e.g., completed, pending)")
+-    args = parser.parse_args()
+-
+-    update_state(args.module, args.status)
+diff --git a/modules/utils.py b/modules/utils.py
+index d1e47ca0623e1134d9311e80417e2a35ccecde30..9fced5e29e53bbe80f1e5f71e2de2f853dedfd81 100644
+--- a/modules/utils.py
++++ b/modules/utils.py
+@@ -1,38 +1,63 @@
++"""Utility helpers for subtitle formatting and environment flags."""
++
++from __future__ import annotations
++
++import os
+ import re
++from pathlib import Path
++import logging
++
++logger = logging.getLogger(__name__)
++
++
++def get_test_mode() -> bool:
++    """Return True if TEST_MODE env var is truthy."""
++    value = os.getenv("TEST_MODE", "true")
++    return value.lower() in {"1", "true", "yes"}
++
++from typing import Iterable, Mapping
++
++
++def save_ass_subtitles(segments: Iterable[Mapping], path: Path) -> None:
++    """Write an ASS subtitle file for *segments* to *path*.
++
++    Each ``segment`` mapping must contain ``start`` (seconds), ``end`` (seconds)
++    and ``word`` (str) keys.
++    """
+ 
+-def save_ass_subtitles(segments, path):
+     header = """[Script Info]
+ ScriptType: v4.00+
+ Collisions: Normal
+ PlayResX: 608
+ PlayResY: 1080
+ WrapStyle: 2
+ 
+ [V4+ Styles]
+ Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+ Style: Default,Bangers,110,&H00FFFFFF,&H000000FF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,3,0,5,10,10,540,1
+ 
+ [Events]
+ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+ """
+ 
+     def to_ass_timestamp(seconds):
+         hours = int(seconds // 3600)
+         minutes = int((seconds % 3600) // 60)
+         secs = int(seconds % 60)
+         centis = int((seconds - int(seconds)) * 100)
+         return f"{hours:d}:{minutes:02d}:{secs:02d}.{centis:02d}"
+ 
+     def remove_punctuation(text):
+         return re.sub(r'[^\w\s]', '', text)
+ 
+     body = ""
+     for segment in segments:
+         start = to_ass_timestamp(segment["start"])
+         end = to_ass_timestamp(segment["end"])
+         clean_word = remove_punctuation(segment["word"])
+         text = clean_word.replace('\\', '\\\\').replace('{', '\{').replace('}', '\}')
+         body += f"Dialogue: 0,{start},{end},Default,,0,0,0,,{text}\\N\n"
+ 
+     with open(path, "w", encoding="utf-8") as f:
+         f.write(header + body)
++
+diff --git a/modules/voiceover.py b/modules/voiceover.py
+index a5fcf715c37e4224328f56e3dcce5c73050650b2..ed547d188d10a0ca37e83117ab017d107d2d640d 100644
+--- a/modules/voiceover.py
++++ b/modules/voiceover.py
+@@ -1,91 +1,93 @@
++"""Voiceover generation using the ElevenLabs API."""
++
++from __future__ import annotations
++
+ import os
+ from pathlib import Path
+ import logging
+-import json
+ import requests
+ from dotenv import load_dotenv
+ import wave
+ import struct
+ 
+ load_dotenv()
+ 
+-# Constants
+-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+-TEMP_DIR = PROJECT_ROOT / "temp"
+-STATE_FILE = PROJECT_ROOT / "state.json"
++logger = logging.getLogger(__name__)
+ 
+-# Ensure temp exists
+-TEMP_DIR.mkdir(parents=True, exist_ok=True)
++from .utils import get_test_mode
+ 
+-# Logging
+-logging.basicConfig(filename=PROJECT_ROOT / "logs/runtime.log", level=logging.INFO)
+ 
+-def get_test_mode():
++def generate_dummy_audio(path: Path) -> None:
++    """Generate a short silent WAV file at *path*."""
+     try:
+-        with open(STATE_FILE, "r") as f:
+-            return json.load(f).get("env", {}).get("test_mode", True)
+-    except Exception as e:
+-        logging.error(f"Could not read state.json: {e}")
+-        return True
+-
+-def generate_dummy_audio(path):
+-    try:
+-        with wave.open(str(path), 'w') as wf:
++        with wave.open(str(path), "w") as wf:
+             wf.setnchannels(1)
+             wf.setsampwidth(2)
+             wf.setframerate(44100)
+             duration_seconds = 2
+             silence = [0] * int(44100 * duration_seconds)
+-            wf.writeframes(b''.join(struct.pack('<h', s) for s in silence))
+-        logging.info(f"Dummy audio generated at {path}")
+-    except Exception as e:
+-        logging.error(f"Failed to generate dummy audio: {e}")
++            wf.writeframes(b"".join(struct.pack("<h", s) for s in silence))
++        logger.info("Dummy audio generated at %s", path)
++    except Exception as exc:
++        logger.error("Failed to generate dummy audio: %s", exc)
++
++def call_elevenlabs_api(text: str, output_path: Path) -> bool:
++    """Call the ElevenLabs API and write the resulting audio to *output_path*.
+ 
+-def call_elevenlabs_api(text, output_path):
++    Returns True on success.
++    """
+     api_key = os.getenv("ELEVENLABS_API_KEY")
+     voice_id = os.getenv("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")  # Default voice ID
+ 
+     if not api_key:
+-        logging.error("ELEVENLABS_API_KEY not found in .env")
++        logger.error("ELEVENLABS_API_KEY not found in environment")
+         return False
+ 
+     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+     headers = {
+         "xi-api-key": api_key,
+         "Content-Type": "application/json"
+     }
+     payload = {
+         "text": text,
+         "voice_settings": {
+             "stability": 0.5,
+             "similarity_boost": 0.75
+         }
+     }
+ 
+     try:
+-        response = requests.post(url, headers=headers, json=payload)
++        response = requests.post(url, headers=headers, json=payload, timeout=30)
+         if response.status_code == 200:
+             with open(output_path, "wb") as f:
+                 f.write(response.content)
+-            logging.info(f"Voiceover generated at {output_path}")
++            logger.info("Voiceover generated at %s", output_path)
+             return True
+-        else:
+-            logging.error(f"ElevenLabs API Error {response.status_code}: {response.text}")
+-            return False
+-    except Exception as e:
+-        logging.error(f"Exception during ElevenLabs call: {e}")
++        logger.error("ElevenLabs API Error %s: %s", response.status_code, response.text)
+         return False
++    except Exception as exc:
++        logger.error("Exception during ElevenLabs call: %s", exc)
++        return False
++
++def generate_voiceover(script_text: str, output_path: Path, test_mode: bool | None = None) -> None:
++    """Generate voiceover audio for *script_text* and write it to *output_path*.
+ 
+-def generate_voiceover(script_text, output_path):
+-    test_mode = get_test_mode()
++    If *test_mode* is True, a silent audio file is generated instead of calling
++    the ElevenLabs API. When *test_mode* is None, the value is determined from
++    the ``TEST_MODE`` environment variable.
++    """
++    if test_mode is None:
++        test_mode = get_test_mode()
+     output_path = Path(output_path)
+     output_path.parent.mkdir(parents=True, exist_ok=True)
+ 
+     if test_mode:
+-        print("[INFO] Test mode active: generating dummy audio")
++        logger.info("Test mode active: generating dummy audio")
+         generate_dummy_audio(output_path)
+     else:
+-        print("[INFO] Calling ElevenLabs API...")
++        logger.info("Calling ElevenLabs API")
+         success = call_elevenlabs_api(script_text, output_path)
+         if not success:
+-            print("[ERROR] Failed to generate voiceover.")
++            logger.error("Failed to generate voiceover")
++
++
+diff --git a/pipeline.py b/pipeline.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..1b8f5558067edc43f5b2d5c8dd2f8402092e9c55
+--- /dev/null
++++ b/pipeline.py
+@@ -0,0 +1,84 @@
++"""High level pipeline orchestration for AutoContent."""
++
++from pathlib import Path
++import logging
++import uuid
++import argparse
++
++from modules.voiceover import generate_voiceover
++from modules.generate_subtitles import generate_subtitles
++from modules.render_video import render_final_video
++from modules.utils import get_test_mode
++
++logging.basicConfig(level=logging.INFO)
++logger = logging.getLogger(__name__)
++
++
++def run_pipeline(
++    script_path: Path,
++    background_video: Path,
++    output_dir: Path,
++    *,
++    job_id: str | None = None,
++    test_mode: bool | None = None,
++) -> Path:
++    """Run the full pipeline and return the rendered video path.
++
++    Parameters
++    ----------
++    script_path : Path
++        Path to the text script input.
++    background_video : Path
++        Path to the background video file.
++    output_dir : Path
++        Directory where job results will be written.
++    job_id : str, optional
++        Identifier for this run. A UUID will be generated if omitted.
++    test_mode : bool, optional
++        When True, heavy operations are skipped and dummy files created.
++    """
++
++    if test_mode is None:
++        test_mode = get_test_mode()
++
++    job_id = job_id or uuid.uuid4().hex
++    temp_dir = Path("temp") / job_id
++    final_dir = output_dir / job_id
++
++    temp_dir.mkdir(parents=True, exist_ok=True)
++    final_dir.mkdir(parents=True, exist_ok=True)
++
++    audio_file = temp_dir / "voice.wav"
++    subtitles_file = temp_dir / "subtitles.ass"
++    final_video = final_dir / "final_render.mp4"
++
++    logger.info("[%s] Generating voiceover", job_id)
++    script_text = Path(script_path).read_text(encoding="utf-8")
++    generate_voiceover(script_text, audio_file, test_mode=test_mode)
++
++    logger.info("[%s] Generating subtitles", job_id)
++    generate_subtitles(audio_file, subtitles_file, test_mode=test_mode)
++
++    logger.info("[%s] Rendering final video", job_id)
++    render_final_video(
++        background_video, audio_file, subtitles_file, final_video, test_mode=test_mode
++    )
++
++    logger.info("[%s] Pipeline complete -> %s", job_id, final_video)
++    return final_video
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser(description="Run the AutoContent pipeline")
++    parser.add_argument("script", type=Path)
++    parser.add_argument("background", type=Path)
++    parser.add_argument("output", type=Path, nargs="?", default=Path("output"))
++    parser.add_argument("--job-id", dest="job_id")
++    args = parser.parse_args()
++
++    run_pipeline(args.script, args.background, args.output, job_id=args.job_id)
++
++
++if __name__ == "__main__":
++    main()
++
+diff --git a/requirements.txt b/requirements.txt
+index 8f767bc8905c4d8cb12f8991a9f25187bb75c9ac..0f581015f56525e82481aedf3e7d321aa22a621d 100644
+GIT binary patch
+literal 81
+zcmXxb!3}^g2nEpl-^E>Ap(>^%1hCLnx7UlOcY6M0HC+x%(t$=-r^vv{A~rEAhg18#
+XK|+I6$`&|FWN}6xyjxTFlV8OP0{<T2
+
+literal 6064
+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
+LgegqRJdOMd#Y=li
+
+diff --git a/runtime.txt b/runtime.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..55090899d0334b0210fdd7f30ea9b2e23e6fce59
+--- /dev/null
++++ b/runtime.txt
+@@ -0,0 +1 @@
++python-3.10
+diff --git a/server.py b/server.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..9761fe13808f4ba07e9f7c408e3cd7cba651a4a6
+--- /dev/null
++++ b/server.py
+@@ -0,0 +1,85 @@
++"""FastAPI server exposing pipeline generation jobs."""
++
++from __future__ import annotations
++
++import os
++from pathlib import Path
++from uuid import uuid4
++from typing import Dict
++
++from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, HTTPException
++from fastapi.middleware.cors import CORSMiddleware
++from fastapi.responses import FileResponse
++import logging
++
++from pipeline import run_pipeline
++
++JOBS_DIR = Path(os.getenv("JOBS_DIR", "jobs"))
++OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "output"))
++JOBS_DIR.mkdir(parents=True, exist_ok=True)
++OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
++
++logger = logging.getLogger(__name__)
++
++app = FastAPI(title="AutoContent API")
++app.add_middleware(
++    CORSMiddleware,
++    allow_origins=["*"],
++    allow_methods=["*"],
++    allow_headers=["*"],
++)
++
++# In-memory job registry
++jobs: Dict[str, Dict] = {}
++
++
++def _run_job(job_id: str, script_path: Path, background: Path, output_dir: Path) -> None:
++    """Background task to execute the pipeline."""
++    try:
++        video = run_pipeline(script_path, background, output_dir, job_id=job_id)
++        jobs[job_id]["status"] = "completed"
++        jobs[job_id]["result"] = str(video)
++    except Exception as exc:
++        logger.exception("Job %s failed", job_id)
++        jobs[job_id]["status"] = "error"
++        jobs[job_id]["error"] = str(exc)
++
++
++@app.post("/jobs")
++async def start_job(
++    background: str = Form(...),
++    script: UploadFile = File(...),
++    background_tasks: BackgroundTasks = BackgroundTasks(),
++):
++    """Create a new pipeline job."""
++
++    job_id = uuid4().hex
++    work_dir = JOBS_DIR / job_id
++    work_dir.mkdir(parents=True, exist_ok=True)
++    script_path = work_dir / "script.txt"
++
++    content = await script.read()
++    script_path.write_bytes(content)
++
++    jobs[job_id] = {"status": "running"}
++    background_tasks.add_task(_run_job, job_id, script_path, Path(background), OUTPUT_DIR)
++    return {"job_id": job_id}
++
++
++@app.get("/jobs/{job_id}")
++def job_status(job_id: str):
++    """Return status information for *job_id*."""
++    if job_id not in jobs:
++        raise HTTPException(status_code=404, detail="Job not found")
++    return jobs[job_id]
++
++
++@app.get("/jobs/{job_id}/result")
++def job_result(job_id: str):
++    """Return the rendered video file for *job_id* if completed."""
++    job = jobs.get(job_id)
++    if not job or job.get("status") != "completed":
++        raise HTTPException(status_code=404, detail="Result not available")
++    return FileResponse(job["result"], filename=f"{job_id}.mp4")
++
++
+diff --git a/test_inputs/test_pipeline.py b/test_inputs/test_pipeline.py
+index ff319344510c1a1682ab293cff8754dfca621e8c..a3105d22d04ffb7728376b0bcabd585965fc3eb3 100644
+--- a/test_inputs/test_pipeline.py
++++ b/test_inputs/test_pipeline.py
+@@ -1,23 +1,23 @@
+ import sys
+ import os
+ sys.path.insert(0, os.path.abspath('.'))
+ 
+-from modules.generate_voiceover_elevenlabs import generate_voiceover
++from modules.voiceover import generate_voiceover
+ from modules.generate_subtitles import generate_subtitles
+ from modules.generate_card import generate_card
+-from modules.render_final_video import render_final_video as generate_final_video
++from modules.render_video import render_final_video as generate_final_video
+ 
+ def main():
+     script_path = "scripts/test_script.txt"
+     audio_path = "temp/voice.wav"
+     subtitle_path = "temp/subtitles.ass"
+     card_path = "temp/reddit_card.png"
+     output_path = "output/final_render.mp4"
+ 
+     generate_voiceover(script_path, audio_path)
+     generate_subtitles(audio_path, subtitle_path)
+     generate_card("testsub", "This is a test title", card_path)
+     generate_final_video(audio_path, subtitle_path, output_path)
+ 
+ if __name__ == "__main__":
+     main()
+diff --git a/test_inputs/test_subtitles.py b/test_inputs/test_subtitles.py
+index 51be0a01a75ddba01f465d483d8cdf80b0451cab..085146388f415a1a53bfda031a753508ca49a885 100644
+--- a/test_inputs/test_subtitles.py
++++ b/test_inputs/test_subtitles.py
+@@ -1,16 +1,16 @@
+ import sys
+ from pathlib import Path
+ 
+ # Add modules to sys path
+ sys.path.append(str(Path(__file__).resolve().parent.parent / "modules"))
+ 
+-from subtitles import generate_subtitles
++from modules.generate_subtitles import generate_subtitles
+ 
+ # Define input/output
+ audio_path = Path(__file__).resolve().parent.parent / "temp" / "voice.wav"
+ subtitle_path = Path(__file__).resolve().parent.parent / "temp" / "subtitles.ass"
+ 
+ # Run subtitle generator
+ generate_subtitles(audio_path, subtitle_path)
+ 
+ print(f"✅ Subtitle test complete. Output saved to: {subtitle_path}")
+diff --git a/test_inputs/test_voiceover.py b/test_inputs/test_voiceover.py
+index dd968722e67bd257091460b44bdee5dde7b3f6a2..98b0700597bd39485e9bd352d4e0672d6961956c 100644
+--- a/test_inputs/test_voiceover.py
++++ b/test_inputs/test_voiceover.py
+@@ -1,20 +1,20 @@
+ import sys
+ from pathlib import Path
+ 
+ # Add parent dir to sys.path to import voiceover
+ sys.path.append(str(Path(__file__).resolve().parent.parent / "modules"))
+ 
+-from voiceover import generate_voiceover
++from modules.voiceover import generate_voiceover
+ 
+ # Dummy script text
+ script_text = """I found a tape recorder in my dead brother’s room.
+ The last recording wasn’t human. It whispered things I can’t forget.
+ """
+ 
+ # Output path
+ output_path = Path(__file__).resolve().parent.parent / "temp" / "voice.wav"
+ 
+ # Run voiceover generation
+ generate_voiceover(script_text, output_path)
+ 
+ print(f"✅ Test complete. Check output at: {output_path}")
+diff --git a/tests/test_pipeline.py b/tests/test_pipeline.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..5defb0c81711d5b63f96d7274c93199f55cfb71b
+--- /dev/null
++++ b/tests/test_pipeline.py
+@@ -0,0 +1,11 @@
++import os
++from pathlib import Path
++from pipeline import run_pipeline
++
++
++def test_run_pipeline(tmp_path):
++    os.environ["TEST_MODE"] = "true"
++    script = Path("scripts/test_script.txt")
++    background = Path("assets/backgrounds/test_video.webm")
++    result = run_pipeline(script, background, tmp_path, test_mode=True)
++    assert result.exists()
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..b535eef56c13b783d4fdb8dad56d52b7b09b58c1
+--- /dev/null
++++ b/tests/test_utils.py
+@@ -0,0 +1,12 @@
++from modules.utils import save_ass_subtitles
++from pathlib import Path
++
++
++def test_save_ass_subtitles(tmp_path):
++    segments = [
++        {"start": 0.0, "end": 1.0, "word": "hello"},
++        {"start": 1.0, "end": 2.0, "word": "world"},
++    ]
++    output = tmp_path / "subs.ass"
++    save_ass_subtitles(segments, output)
++    assert output.exists()
+diff --git a/tests/test_voiceover.py b/tests/test_voiceover.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..dd77940a553c78a8078804a1f5c0ee7e70fe19ab
+--- /dev/null
++++ b/tests/test_voiceover.py
+@@ -0,0 +1,10 @@
++import os
++from pathlib import Path
++from modules.voiceover import generate_voiceover
++
++
++def test_generate_voiceover(tmp_path):
++    os.environ["TEST_MODE"] = "true"
++    output = tmp_path / "voice.wav"
++    generate_voiceover("Hello world", output, test_mode=True)
++    assert output.exists()
+diff --git a/update_state.py b/update_state.py
+deleted file mode 100644
+index 3cd7bf2595895e528f81c983cd8d65163b532558..0000000000000000000000000000000000000000
+--- a/update_state.py
++++ /dev/null
+@@ -1,12 +0,0 @@
+-import json
+-import os
+-
+-def update_state(module, status):
+-    path = "state.json"
+-    state = {}
+-    if os.path.exists(path):
+-        with open(path, "r", encoding="utf-8") as f:
+-            state = json.load(f)
+-    state[module] = status
+-    with open(path, "w", encoding="utf-8") as f:
+-        json.dump(state, f, indent=2)
